@@ -67,17 +67,8 @@
         </div>
 
         <div id="paymentApps" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:15px 0;">
-            <button type="button" onclick="openPaymentApp('gpay')" class="payment-btn" title="Google Pay">
-                <span style="font-size:1.2rem;">💚</span> Google Pay
-            </button>
-            <button type="button" onclick="openPaymentApp('phonepe')" class="payment-btn" title="PhonePe">
-                <span style="font-size:1.2rem;">📱</span> PhonePe
-            </button>
-            <button type="button" onclick="openPaymentApp('paytm')" class="payment-btn" title="PayTM">
-                <span style="font-size:1.2rem;">🟦</span> PayTM
-            </button>
-            <button type="button" onclick="openPaymentApp('bhim')" class="payment-btn" title="BHIM">
-                <span style="font-size:1.2rem;">🏦</span> BHIM
+            <button type="button" onclick="openPaymentApp('pay')" class="payment-btn" title="Open Payment">
+                <span style="font-size:1.2rem;">💳</span> Pay Now
             </button>
         </div>
 
@@ -103,31 +94,18 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// Check if payment app is available
-function isPaymentAppAvailable(app) {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const appDetection = {
-        'gpay': userAgent.includes('google') || userAgent.includes('android'),
-        'phonepe': userAgent.includes('android'),
-        'paytm': userAgent.includes('android'),
-        'bhim': userAgent.includes('android')
-    };
-    return appDetection[app] || isMobileDevice();
-}
-
-// Generate UPI link
-function generateUPILink(amount, appName) {
+// Generate Payment Link for Website
+function generatePaymentLink(amount) {
     const amountValue = amount.replace('₹', '').trim();
     const transactionRef = 'ASCEND-' + Date.now();
-    const description = `Payment for ${appName} Pack - ASCEND Server`;
     
-    // Standard UPI format
-    const upiLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amountValue}&tn=${encodeURIComponent(description)}&tr=${transactionRef}`;
+    // Standard UPI payment link (works on web browsers)
+    const paymentLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amountValue}&tr=${transactionRef}`;
     
-    return upiLink;
+    return paymentLink;
 }
 
-// Open payment app with UPI link
+// Show Payment Link
 function openPaymentApp(appName) {
     const amountField = document.getElementById("amountField").value;
     const selectedPack = document.getElementById("selectedPack").value;
@@ -138,39 +116,10 @@ function openPaymentApp(appName) {
     }
 
     const amount = amountField.replace('₹', '').trim();
+    const paymentLink = generatePaymentLink(amountField);
     
-    // App scheme mapping
-    const appSchemes = {
-        'gpay': `google://upi/0/${UPI_ID}?am=${amount}&tn=ASCEND-Pack`,
-        'phonepe': `phonepe://upi/${UPI_ID}?am=${amount}`,
-        'paytm': `paytmqr://address/${UPI_ID}?am=${amount}`,
-        'bhim': `bhim://upi/${UPI_ID}?am=${amount}`
-    };
-
-    // Fallback to standard UPI link
-    const upiLink = generateUPILink(amountField, selectedPack);
-
-    if (isMobileDevice()) {
-        // Try to open app-specific scheme
-        if (appSchemes[appName]) {
-            const link = appSchemes[appName];
-            setTimeout(() => {
-                // Fallback to standard UPI if app scheme fails
-                window.location.href = upiLink;
-            }, 1000);
-            window.location.href = link;
-        } else {
-            window.location.href = upiLink;
-        }
-    } else {
-        // Desktop: Show UPI ID to copy
-        const copyText = UPI_ID;
-        navigator.clipboard.writeText(copyText).then(() => {
-            alert(`📋 UPI ID copied to clipboard!\n\n${copyText}\n\nAmount: ₹${amount}\n\nPlease use any UPI app on your phone to complete the payment.`);
-        }).catch(() => {
-            alert(`Payment Details:\n\nUPI ID: ${UPI_ID}\nAmount: ₹${amount}\n\nPlease use any UPI app on your phone to complete the payment.`);
-        });
-    }
+    // Open payment link in new window/tab
+    window.location.href = paymentLink;
 }
 
 // Initialize payment section visibility
